@@ -19,7 +19,7 @@ const UserSchema = new Schema({
     },
     district_id: {
         type: String,
-        required: true
+        //required: true
     },
    age : {
         type: Number,
