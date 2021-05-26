@@ -55,6 +55,13 @@ const updateDistrict=(tag,district)=>{
 	});
 } 
 
+const updateSubsription=(tag,val)=>{
+	User.findOneAndUpdate({tag:tag},{$set : {$subscribe:val}},(err,res)=>{
+		if (err)
+			console.log(err);
+	});
+}
+
 
 
 const findState=(tag)=>{
@@ -273,7 +280,21 @@ client.on('message',async (msg)=>{
 					msg.channel.send(embed);
 		}
 
-
+		if (key == "#subscribe"){
+			tag = msg.author.tag;
+			var embed;
+			const subs = User.find({tag:tag});
+			console.log(subs)
+			if (subs.$subscribe === false){
+				embed = new Discord.MessageEmbed().setColor('#0099ff').setDescription('You have subscribed');
+				updateSubsription(tag,true);
+			}
+			else{
+				embed = new Discord.MessageEmbed().setColor('#0099ff').setDescription('You have UNsubscribed');
+				updateSubsription(tag,false);
+			}
+			msg.channel.send(embed);
+		}
 
 
 
@@ -295,11 +316,6 @@ client.on('message',async (msg)=>{
 
 		}
 
-		if(key==="#subcribe")
-		{
-			updateStatus(msg.author.tag);
-
-		}
 
 
 	}	
@@ -321,5 +337,7 @@ client.on('message',async (msg)=>{
 
 	
 });
+
+// const checkSlots = 
 
 client.login(process.env.DISCORD_BOT_TOKEN);
