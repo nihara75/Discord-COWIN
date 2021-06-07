@@ -2,6 +2,7 @@ const Discord=require('discord.js');
 require('dotenv').config();
 const { getState, getDistricts, getSlots }=require('./cowinApi.js');
 require('./user.js');
+const {hourtask}=require('./schedule.js');
 const client=new Discord.Client();
 const mongoose=require('mongoose');
 const User=require('mongoose').model('User');
@@ -15,6 +16,8 @@ mongoose.connect(process.env.mongoURL,{
 
 
 const prefix='#';
+//const id=842094345968812033;
+
 
 
 var datas=[];
@@ -22,10 +25,11 @@ var datadis=[];
 var dataslot=[];
 
 
-const createProfile=(tag,stid)=>{
+const createProfile=(tag,id,stid)=>{
 
     const person = new User({
-    	tag:tag,
+		tag:tag,
+		user_id:id,
     	state_id:stid,
     	
     
@@ -102,10 +106,26 @@ const updateStatus=(tag,value)=>{
 
 };
 
+
+
 client.on('ready',async ()=>{
 	console.log("Ready");
+	
+	const embed=new Discord.MessageEmbed()
+					.setColor('#0099ff')
+				   .setDescription('helllo ');
 	const state=await getState();
 	datas=state.states;
+	//console.log(state);
+	hourtask.start();
+/*client.users.fetch('842094345968812033').then((user)=>{
+		console.log(user);
+		user.send(embed);
+	})*/
+	
+
+
+//userid.send(embed).catch(async()=>{console.log("can't dm to users");});
 
 
 	
@@ -115,12 +135,20 @@ client.on('ready',async ()=>{
 });
 
 client.on('guildMemberAdd', member => {
-  // Send the message to a designated channel on a server:
+	console.log(member);
+  
   const channel = member.guild.channels.cache.find(ch => ch.name === 'member-log');
-  // Do nothing if the channel wasn't found on this server
+  
   if (!channel) return;
-  // Send the message, mentioning the member
+  
   channel.send(`Welcome to the server, ${member}`);
+
+  const embed=new Discord.MessageEmbed()
+		.setColor('#0099ff')
+		.setTitle('ABOUT ME')
+		.setDescription('Register for the daily or hourly updates of vaccine slots near you!! enter #start to begin your journey');
+
+		channel.send(embed);
 });
 
 	
@@ -131,6 +159,7 @@ client.on('message',async (msg)=>{
 	if(msg.content==="Hello"||msg.content==="Hi")
 	{
 		msg.reply("Welcome "+msg.author.tag);
+		console.log(msg.author.id);
 		const embed=new Discord.MessageEmbed()
 		.setColor('#0099ff')
 		.setTitle('ABOUT ME')
@@ -179,7 +208,7 @@ client.on('message',async (msg)=>{
 				const embed=new Discord.MessageEmbed()
 				.setColor('#0099ff')
 				
-				.setDescription('Enter #age-agenumber for age updation and #district-districtname for district updation');
+				.setDescription('Enter #age-agenumber for age updation, #district-districtname for district updation, #subscribe-true/false for updating notification status');
 	
 				msg.reply(embed);
 				return;
@@ -229,7 +258,7 @@ client.on('message',async (msg)=>{
 
 					state_id=res.state_id;
 					console.log(state_id+" ");
-					const p=createProfile(msg.author.tag,state_id);
+					const p=createProfile(msg.author.tag,msg.author.id,state_id);
 					const embed=new Discord.MessageEmbed()
 					.setColor('#0099ff')
 					.setDescription('Enter your district in the format #district-districtname ');
@@ -289,20 +318,21 @@ client.on('message',async (msg)=>{
 					msg.channel.send(embed);
 		}
 
-		if (key == "#subscribe"){
-			tag = msg.author.tag;
-			var embed;
-			const subs = User.find({tag:tag});
-			console.log(subs)
-			if (subs.$subscribe === false){
-				embed = new Discord.MessageEmbed().setColor('#0099ff').setDescription('You have subscribed');
-				updateSubsription(tag,true);
+		if (key ==="#subscribe"){
+
+			const res1=await findState(msg.author.tag);
+			if(!res1.age)
+			{
+				const embed=new Discord.MessageEmbed()
+					.setColor('#0099ff')
+	
+					.setDescription(' You have not entered a age');
+					msg.channel.send(embed);
+					return;
 			}
-			else{
-				embed = new Discord.MessageEmbed().setColor('#0099ff').setDescription('You have UNsubscribed');
-				updateSubsription(tag,false);
-			}
-			msg.channel.send(embed);
+
+			updateStatus(msg.author.tag,value);
+			
 		}
 
 
@@ -322,6 +352,21 @@ client.on('message',async (msg)=>{
 			}
 			console.log(value);
 			updateAge(msg.author.tag,parseInt(value));
+			const res=await findState(msg.author.tag);
+			if(!res.subscribe)
+			{
+
+
+				const embed=new Discord.MessageEmbed()
+					.setColor('#0099ff')
+	
+					.setDescription(' Enter #subscribe-true for hourly notification of vaccine slot availability');
+					msg.channel.send(embed);
+					return;
+			}
+
+			
+
 
 		}
 
@@ -350,3 +395,4 @@ client.on('message',async (msg)=>{
 // const checkSlots = 
 
 client.login(process.env.DISCORD_BOT_TOKEN);
+global.client=client;
